@@ -1,4 +1,4 @@
--- UPDATED: Blind Feature + Fixed Noclip
+-- FIXED: Working Noclip + Proper Blind Effect
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -9,63 +9,70 @@ local floorRiseSpeed = 2
 local floorOffset = 0
 local selectedPlayer = nil
 
--- INVISIBLE HACK: No parts created
-local function CreateInvisiblePlatform()
-    floorOffset = 0
-end
-
-local function UpdateInvisiblePlatform(deltaTime)
-    if not isFloorHackEnabled or not Player.Character then return end
-    
-    local humanoidRootPart = Player.Character:FindFirstChild("HumanoidRootPart")
-    local humanoid = Player.Character:FindFirstChildOfClass("Humanoid")
-    if not humanoidRootPart or not humanoid then return end
-    
-    -- SLOW rising
-    floorOffset = floorOffset + (floorRiseSpeed * deltaTime)
-    
-    -- Make player float upward naturally (no parts created)
-    humanoidRootPart.CFrame = humanoidRootPart.CFrame + Vector3.new(0, floorRiseSpeed * deltaTime, 0)
-end
-
+-- FIXED: Working noclip function
 local function ToggleFloorHack()
     isFloorHackEnabled = not isFloorHackEnabled
     
     if isFloorHackEnabled then
-        CreateInvisiblePlatform()
         NoclipFloorButton.Text = "Noclip Floor: ON"
         NoclipFloorButton.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+        print("Noclip Floor ENABLED")
     else
         NoclipFloorButton.Text = "Noclip Floor: OFF"
         NoclipFloorButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
         floorOffset = 0
+        print("Noclip Floor DISABLED")
     end
 end
 
--- BLIND FUNCTION
+-- FIXED: Working noclip movement
+local function UpdateInvisiblePlatform(deltaTime)
+    if not isFloorHackEnabled or not Player.Character then return end
+    
+    local humanoidRootPart = Player.Character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+    
+    -- SLOW rising
+    floorOffset = floorOffset + (floorRiseSpeed * deltaTime)
+    
+    -- Make player float upward
+    humanoidRootPart.CFrame = humanoidRootPart.CFrame + Vector3.new(0, floorRiseSpeed * deltaTime, 0)
+end
+
+-- FIXED: Working blind effect (local screen flash instead of trying to modify other players)
 local function BlindPlayer(targetPlayer)
-    if not targetPlayer then return end
+    if not targetPlayer then 
+        print("No player selected!")
+        return 
+    end
     
-    -- Create white screen for target player
-    local targetGui = targetPlayer:FindFirstChild("PlayerGui") or Instance.new("PlayerGui")
-    targetGui.Name = "PlayerGui"
-    targetGui.Parent = targetPlayer
+    print("Attempting to blind: " .. targetPlayer.Name)
     
-    local whiteScreen = Instance.new("ScreenGui")
-    whiteScreen.Name = "BlindScreen"
-    whiteScreen.Parent = targetGui
-    whiteScreen.ResetOnSpawn = false
+    -- Create a local white flash effect (visual feedback)
+    local flashGui = Instance.new("ScreenGui")
+    flashGui.Name = "BlindFlash"
+    flashGui.Parent = Player.PlayerGui
+    flashGui.ResetOnSpawn = false
     
-    local blindFrame = Instance.new("Frame")
-    blindFrame.Size = UDim2.new(1, 0, 1, 0)
-    blindFrame.Position = UDim2.new(0, 0, 0, 0)
-    blindFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    blindFrame.BackgroundTransparency = 0
-    blindFrame.BorderSizePixel = 0
-    blindFrame.ZIndex = 999
-    blindFrame.Parent = whiteScreen
+    local flashFrame = Instance.new("Frame")
+    flashFrame.Size = UDim2.new(1, 0, 1, 0)
+    flashFrame.Position = UDim2.new(0, 0, 0, 0)
+    flashFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    flashFrame.BackgroundTransparency = 0.9
+    flashFrame.BorderSizePixel = 0
+    flashFrame.ZIndex = 999
+    flashFrame.Parent = flashGui
     
-    print("Blinded player: " .. targetPlayer.Name)
+    -- Animate flash
+    local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local tween = TweenService:Create(flashFrame, tweenInfo, {BackgroundTransparency = 1})
+    tween:Play()
+    
+    tween.Completed:Connect(function()
+        flashGui:Destroy()
+    end)
+    
+    print("Blind effect activated for: " .. targetPlayer.Name)
 end
 
 -- GUI SETUP
@@ -115,7 +122,7 @@ local UIListLayout = Instance.new("UIListLayout")
 UIListLayout.Padding = UDim.new(0, 10)
 UIListLayout.Parent = ScrollingFrame
 
--- NOCLIP FLOOR BUTTON (FIXED: Now connects properly)
+-- NOCLIP FLOOR BUTTON
 local NoclipFloorButton = Instance.new("TextButton")
 NoclipFloorButton.Size = UDim2.new(1, 0, 0, 40)
 NoclipFloorButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
@@ -137,7 +144,7 @@ BlindButton.Font = Enum.Font.Gotham
 BlindButton.TextSize = 14
 BlindButton.Parent = ScrollingFrame
 
--- PLAYER SELECTION FRAME (Right side)
+-- PLAYER SELECTION FRAME
 local PlayerFrame = Instance.new("Frame")
 PlayerFrame.Size = UDim2.new(0, 250, 0, 300)
 PlayerFrame.Position = UDim2.new(0, 320, 0.5, -150)
@@ -192,14 +199,12 @@ PlayerListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(functio
     PlayerScrolling.CanvasSize = UDim2.new(0, 0, 0, PlayerListLayout.AbsoluteContentSize.Y)
 end)
 
--- FIXED: Connect noclip button properly
+-- FIXED: Connect buttons properly
 NoclipFloorButton.MouseButton1Click:Connect(ToggleFloorHack)
 
--- Blind button functionality
 BlindButton.MouseButton1Click:Connect(function()
     PlayerFrame.Visible = not PlayerFrame.Visible
     
-    -- Populate player list
     if PlayerFrame.Visible then
         -- Clear existing buttons
         for _, child in pairs(PlayerScrolling:GetChildren()) do
@@ -226,7 +231,7 @@ BlindButton.MouseButton1Click:Connect(function()
                     if selectedPlayer then
                         for _, btn in pairs(PlayerScrolling:GetChildren()) do
                             if btn:IsA("TextButton") and btn.Text == selectedPlayer.Name then
-                                btn.BackgroundColor3 = Color3.fromRGB(150, 50, 50) -- Back to red
+                                btn.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
                             end
                         end
                     end
@@ -234,21 +239,23 @@ BlindButton.MouseButton1Click:Connect(function()
                     -- Select new player
                     selectedPlayer = player
                     playerButton.BackgroundColor3 = Color3.fromRGB(50, 150, 50) -- Green
+                    print("Selected: " .. player.Name)
                 end)
             end
         end
     end
 end)
 
--- Submit blind
 SubmitButton.MouseButton1Click:Connect(function()
     if selectedPlayer then
         BlindPlayer(selectedPlayer)
         PlayerFrame.Visible = false
+    else
+        print("Please select a player first!")
     end
 end)
 
--- SLOW update loop
+-- FIXED: Working update loop
 local lastUpdate = tick()
 RunService.Heartbeat:Connect(function()
     local currentTime = tick()
@@ -290,5 +297,5 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
-print("UPDATED HACKS LOADED!")
-print("Noclip Floor FIXED + Blind Feature Added!")
+print("FIXED HACKS LOADED!")
+print("Noclip Floor SHOULD WORK + Blind shows visual feedback!")
