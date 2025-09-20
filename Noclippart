@@ -1,0 +1,171 @@
+-- Steven's Hacks GUI with Noclip Floor
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+
+local Player = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- Create the main GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "StevensHacks"
+ScreenGui.Parent = Player.PlayerGui
+ScreenGui.ResetOnSpawn = false
+
+-- Create the pretty scrolling frame
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 300, 0, 400)
+MainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
+MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+MainFrame.BackgroundTransparency = 0.1
+MainFrame.BorderSizePixel = 0
+MainFrame.Parent = ScreenGui
+
+-- Add gradient effect
+local Gradient = Instance.new("UIGradient")
+Gradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 50, 70)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 20, 30))
+})
+Gradient.Rotation = 90
+Gradient.Parent = MainFrame
+
+-- Title label
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, 0, 0, 50)
+TitleLabel.Position = UDim2.new(0, 0, 0, 0)
+TitleLabel.BackgroundColor3 = Color3.fromRGB(0, 100, 150)
+TitleLabel.BackgroundTransparency = 0.2
+TitleLabel.Text = "Steven's hacks"
+TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.TextSize = 20
+TitleLabel.Parent = MainFrame
+
+-- Scrolling frame
+local ScrollingFrame = Instance.new("ScrollingFrame")
+ScrollingFrame.Size = UDim2.new(1, -20, 1, -70)
+ScrollingFrame.Position = UDim2.new(0, 10, 0, 60)
+ScrollingFrame.BackgroundTransparency = 1
+ScrollingFrame.BorderSizePixel = 0
+ScrollingFrame.ScrollBarThickness = 5
+ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 100)
+ScrollingFrame.Parent = MainFrame
+
+-- UIListLayout for scrolling frame
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Padding = UDim.new(0, 10)
+UIListLayout.Parent = ScrollingFrame
+
+-- Noclip Floor button
+local NoclipFloorButton = Instance.new("TextButton")
+NoclipFloorButton.Size = UDim2.new(1, 0, 0, 40)
+NoclipFloorButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+NoclipFloorButton.BackgroundTransparency = 0.5
+NoclipFloorButton.Text = "Noclip Floor: OFF"
+NoclipFloorButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+NoclipFloorButton.Font = Enum.Font.Gotham
+NoclipFloorButton.TextSize = 14
+NoclipFloorButton.Parent = ScrollingFrame
+
+-- Update canvas size
+UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y)
+end)
+
+-- Noclip Floor variables
+local isNoclipFloorEnabled = false
+local noclipFloorPart = nil
+
+-- Create the green transparent floor part
+local function CreateNoclipFloor()
+    if noclipFloorPart then noclipFloorPart:Destroy() end
+    
+    noclipFloorPart = Instance.new("Part")
+    noclipFloorPart.Name = "NoclipFloor"
+    noclipFloorPart.Size = Vector3.new(50, 1, 50)
+    noclipFloorPart.Color = Color3.fromRGB(0, 255, 0) -- Green
+    noclipFloorPart.Transparency = 0.5 -- 50% transparent
+    noclipFloorPart.Material = Enum.Material.Neon
+    noclipFloorPart.Anchored = true
+    noclipFloorPart.CanCollide = false
+    noclipFloorPart.Parent = workspace
+end
+
+-- Function to make the floor always go up under the player
+local function UpdateNoclipFloor()
+    if not isNoclipFloorEnabled or not noclipFloorPart or not Player.Character then return end
+    
+    local humanoidRootPart = Player.Character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+    
+    -- Position the floor slightly below the player and make it always go up
+    local playerPosition = humanoidRootPart.Position
+    noclipFloorPart.Position = Vector3.new(playerPosition.X, playerPosition.Y - 5, playerPosition.Z)
+    
+    -- Make the floor always go up (rising effect)
+    noclipFloorPart.Position = noclipFloorPart.Position + Vector3.new(0, 0.1, 0)
+end
+
+-- Toggle noclip floor function
+local function ToggleNoclipFloor()
+    isNoclipFloorEnabled = not isNoclipFloorEnabled
+    
+    if isNoclipFloorEnabled then
+        CreateNoclipFloor()
+        NoclipFloorButton.Text = "Noclip Floor: ON"
+        NoclipFloorButton.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+    else
+        if noclipFloorPart then
+            noclipFloorPart:Destroy()
+            noclipFloorPart = nil
+        end
+        NoclipFloorButton.Text = "Noclip Floor: OFF"
+        NoclipFloorButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+    end
+end
+
+-- Connect button click
+NoclipFloorButton.MouseButton1Click:Connect(ToggleNoclipFloor)
+
+-- Update floor position every frame
+RunService.Heartbeat:Connect(function()
+    if isNoclipFloorEnabled then
+        UpdateNoclipFloor()
+    end
+end)
+
+-- Make GUI draggable
+local dragging = false
+local dragInput, dragStart, startPos
+
+TitleLabel.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+TitleLabel.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+print("Steven's hacks GUI loaded successfully!")
+print("Noclip Floor feature ready - creates a green transparent floor that rises under you")
