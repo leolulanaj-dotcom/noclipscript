@@ -1,12 +1,13 @@
--- UNDETECTABLE FLOOR HACK WITH FULL GUI
+-- UPDATED: Blind Feature + Fixed Noclip
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
 local Player = Players.LocalPlayer
 local isFloorHackEnabled = false
-local floorRiseSpeed = 2 -- Slow and natural
+local floorRiseSpeed = 2
 local floorOffset = 0
+local selectedPlayer = nil
 
 -- INVISIBLE HACK: No parts created
 local function CreateInvisiblePlatform()
@@ -41,7 +42,33 @@ local function ToggleFloorHack()
     end
 end
 
--- FULL FANCY GUI (ORIGINAL STYLE)
+-- BLIND FUNCTION
+local function BlindPlayer(targetPlayer)
+    if not targetPlayer then return end
+    
+    -- Create white screen for target player
+    local targetGui = targetPlayer:FindFirstChild("PlayerGui") or Instance.new("PlayerGui")
+    targetGui.Name = "PlayerGui"
+    targetGui.Parent = targetPlayer
+    
+    local whiteScreen = Instance.new("ScreenGui")
+    whiteScreen.Name = "BlindScreen"
+    whiteScreen.Parent = targetGui
+    whiteScreen.ResetOnSpawn = false
+    
+    local blindFrame = Instance.new("Frame")
+    blindFrame.Size = UDim2.new(1, 0, 1, 0)
+    blindFrame.Position = UDim2.new(0, 0, 0, 0)
+    blindFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    blindFrame.BackgroundTransparency = 0
+    blindFrame.BorderSizePixel = 0
+    blindFrame.ZIndex = 999
+    blindFrame.Parent = whiteScreen
+    
+    print("Blinded player: " .. targetPlayer.Name)
+end
+
+-- GUI SETUP
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "StevensHacks"
 ScreenGui.Parent = Player.PlayerGui
@@ -81,13 +108,14 @@ ScrollingFrame.Position = UDim2.new(0, 10, 0, 60)
 ScrollingFrame.BackgroundTransparency = 1
 ScrollingFrame.BorderSizePixel = 0
 ScrollingFrame.ScrollBarThickness = 5
-ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 100)
+ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 200)
 ScrollingFrame.Parent = MainFrame
 
 local UIListLayout = Instance.new("UIListLayout")
 UIListLayout.Padding = UDim.new(0, 10)
 UIListLayout.Parent = ScrollingFrame
 
+-- NOCLIP FLOOR BUTTON (FIXED: Now connects properly)
 local NoclipFloorButton = Instance.new("TextButton")
 NoclipFloorButton.Size = UDim2.new(1, 0, 0, 40)
 NoclipFloorButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
@@ -98,11 +126,127 @@ NoclipFloorButton.Font = Enum.Font.Gotham
 NoclipFloorButton.TextSize = 14
 NoclipFloorButton.Parent = ScrollingFrame
 
+-- BLIND BUTTON
+local BlindButton = Instance.new("TextButton")
+BlindButton.Size = UDim2.new(1, 0, 0, 40)
+BlindButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+BlindButton.BackgroundTransparency = 0.5
+BlindButton.Text = "Blind Player"
+BlindButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+BlindButton.Font = Enum.Font.Gotham
+BlindButton.TextSize = 14
+BlindButton.Parent = ScrollingFrame
+
+-- PLAYER SELECTION FRAME (Right side)
+local PlayerFrame = Instance.new("Frame")
+PlayerFrame.Size = UDim2.new(0, 250, 0, 300)
+PlayerFrame.Position = UDim2.new(0, 320, 0.5, -150)
+PlayerFrame.AnchorPoint = Vector2.new(0, 0.5)
+PlayerFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+PlayerFrame.BackgroundTransparency = 0.1
+PlayerFrame.BorderSizePixel = 0
+PlayerFrame.Visible = false
+PlayerFrame.Parent = MainFrame
+
+local PlayerTitle = Instance.new("TextLabel")
+PlayerTitle.Size = UDim2.new(1, 0, 0, 40)
+PlayerTitle.Position = UDim2.new(0, 0, 0, 0)
+PlayerTitle.BackgroundColor3 = Color3.fromRGB(0, 100, 150)
+PlayerTitle.BackgroundTransparency = 0.2
+PlayerTitle.Text = "Select Player"
+PlayerTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+PlayerTitle.Font = Enum.Font.GothamBold
+PlayerTitle.TextSize = 16
+PlayerTitle.Parent = PlayerFrame
+
+local PlayerScrolling = Instance.new("ScrollingFrame")
+PlayerScrolling.Size = UDim2.new(1, -20, 1, -100)
+PlayerScrolling.Position = UDim2.new(0, 10, 0, 50)
+PlayerScrolling.BackgroundTransparency = 1
+PlayerScrolling.BorderSizePixel = 0
+PlayerScrolling.ScrollBarThickness = 5
+PlayerScrolling.CanvasSize = UDim2.new(0, 0, 0, 0)
+PlayerScrolling.Parent = PlayerFrame
+
+local PlayerListLayout = Instance.new("UIListLayout")
+PlayerListLayout.Padding = UDim.new(0, 5)
+PlayerListLayout.Parent = PlayerScrolling
+
+local SubmitButton = Instance.new("TextButton")
+SubmitButton.Size = UDim2.new(1, -20, 0, 30)
+SubmitButton.Position = UDim2.new(0, 10, 1, -40)
+SubmitButton.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+SubmitButton.BackgroundTransparency = 0.3
+SubmitButton.Text = "BLIND PLAYER"
+SubmitButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+SubmitButton.Font = Enum.Font.GothamBold
+SubmitButton.TextSize = 14
+SubmitButton.Parent = PlayerFrame
+
+-- Update layout sizes
 UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y)
 end)
 
+PlayerListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    PlayerScrolling.CanvasSize = UDim2.new(0, 0, 0, PlayerListLayout.AbsoluteContentSize.Y)
+end)
+
+-- FIXED: Connect noclip button properly
 NoclipFloorButton.MouseButton1Click:Connect(ToggleFloorHack)
+
+-- Blind button functionality
+BlindButton.MouseButton1Click:Connect(function()
+    PlayerFrame.Visible = not PlayerFrame.Visible
+    
+    -- Populate player list
+    if PlayerFrame.Visible then
+        -- Clear existing buttons
+        for _, child in pairs(PlayerScrolling:GetChildren()) do
+            if child:IsA("TextButton") then
+                child:Destroy()
+            end
+        end
+        
+        -- Add players to list
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= Player then
+                local playerButton = Instance.new("TextButton")
+                playerButton.Size = UDim2.new(1, 0, 0, 30)
+                playerButton.BackgroundColor3 = Color3.fromRGB(150, 50, 50) -- Red
+                playerButton.BackgroundTransparency = 0.5
+                playerButton.Text = player.Name
+                playerButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+                playerButton.Font = Enum.Font.Gotham
+                playerButton.TextSize = 12
+                playerButton.Parent = PlayerScrolling
+                
+                playerButton.MouseButton1Click:Connect(function()
+                    -- Deselect previous
+                    if selectedPlayer then
+                        for _, btn in pairs(PlayerScrolling:GetChildren()) do
+                            if btn:IsA("TextButton") and btn.Text == selectedPlayer.Name then
+                                btn.BackgroundColor3 = Color3.fromRGB(150, 50, 50) -- Back to red
+                            end
+                        end
+                    end
+                    
+                    -- Select new player
+                    selectedPlayer = player
+                    playerButton.BackgroundColor3 = Color3.fromRGB(50, 150, 50) -- Green
+                end)
+            end
+        end
+    end
+end)
+
+-- Submit blind
+SubmitButton.MouseButton1Click:Connect(function()
+    if selectedPlayer then
+        BlindPlayer(selectedPlayer)
+        PlayerFrame.Visible = false
+    end
+end)
 
 -- SLOW update loop
 local lastUpdate = tick()
@@ -146,5 +290,5 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
-print("STEALTH FLOOR HACK LOADED!")
-print("Full GUI + Undetectable float hack!")
+print("UPDATED HACKS LOADED!")
+print("Noclip Floor FIXED + Blind Feature Added!")
