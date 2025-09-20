@@ -1,5 +1,4 @@
-
--- FIXED Steven's Hacks with Rising Noclip Floor
+-- ULTIMATE RISING PLATFORM with Player Attachment
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -7,10 +6,11 @@ local RunService = game:GetService("RunService")
 local Player = Players.LocalPlayer
 local isNoclipFloorEnabled = false
 local noclipFloorPart = nil
-local floorRiseSpeed = 1 -- Units per second
-local floorOffset = 0 -- Current rise offset
+local floorRiseSpeed = 10 -- MUCH FASTER (was 1)
+local floorOffset = 0
+local playerConnection = nil
 
--- Create the main GUI
+-- Create the main GUI (same as before)
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "StevensHacks"
 ScreenGui.Parent = Player.PlayerGui
@@ -71,42 +71,55 @@ UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y)
 end)
 
--- Create the green transparent floor part
+-- FIXED: Create platform that player can stand on
 local function CreateNoclipFloor()
     if noclipFloorPart then noclipFloorPart:Destroy() end
     
     noclipFloorPart = Instance.new("Part")
     noclipFloorPart.Name = "NoclipFloor"
-    noclipFloorPart.Size = Vector3.new(50, 1, 50)
+    noclipFloorPart.Size = Vector3.new(30, 2, 30) -- Thicker platform
     noclipFloorPart.Color = Color3.fromRGB(0, 255, 0)
-    noclipFloorPart.Transparency = 0.5
+    noclipFloorPart.Transparency = 0.3 -- Less transparent
     noclipFloorPart.Material = Enum.Material.Neon
     noclipFloorPart.Anchored = true
-    noclipFloorPart.CanCollide = false
+    noclipFloorPart.CanCollide = true -- MUST BE TRUE FOR PLAYER TO STAND ON IT
     noclipFloorPart.Parent = workspace
-    floorOffset = 0 -- Reset offset when created
+    floorOffset = 0
 end
 
--- FIXED: Proper rising floor function
+-- FIXED: Force player to stay on the platform
+local function AttachPlayerToPlatform()
+    if not Player.Character then return end
+    
+    local humanoidRootPart = Player.Character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+    
+    -- Force player to stand on the platform
+    humanoidRootPart.Velocity = Vector3.new(0, 0, 0)
+    humanoidRootPart.CFrame = CFrame.new(humanoidRootPart.Position.X, noclipFloorPart.Position.Y + 5, humanoidRootPart.Position.Z)
+end
+
+-- FIXED: Faster rising with player attachment
 local function UpdateNoclipFloor(deltaTime)
     if not isNoclipFloorEnabled or not noclipFloorPart or not Player.Character then return end
     
     local humanoidRootPart = Player.Character:FindFirstChild("HumanoidRootPart")
     if not humanoidRootPart then return end
     
-    -- Get player position and add rising offset
-    local playerPosition = humanoidRootPart.Position
-    floorOffset = floorOffset + (floorRiseSpeed * deltaTime) -- Increase offset over time
+    -- MUCH FASTER rising speed
+    floorOffset = floorOffset + (floorRiseSpeed * deltaTime)
     
-    -- Set floor position (below player + rising offset)
+    -- Set platform position
     noclipFloorPart.Position = Vector3.new(
-        playerPosition.X,
-        playerPosition.Y - 3 + floorOffset, -- 3 units below player + rising offset
-        playerPosition.Z
+        humanoidRootPart.Position.X,
+        humanoidRootPart.Position.Y - 5 + floorOffset, -- Platform below player
+        humanoidRootPart.Position.Z
     )
+    
+    -- Force player to stay on the platform
+    AttachPlayerToPlatform()
 end
 
--- Toggle noclip floor function
 local function ToggleNoclipFloor()
     isNoclipFloorEnabled = not isNoclipFloorEnabled
     
@@ -114,10 +127,22 @@ local function ToggleNoclipFloor()
         CreateNoclipFloor()
         NoclipFloorButton.Text = "Noclip Floor: ON"
         NoclipFloorButton.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+        
+        -- Start forcing player to stay on platform
+        if playerConnection then playerConnection:Disconnect() end
+        playerConnection = RunService.Heartbeat:Connect(function()
+            if isNoclipFloorEnabled and noclipFloorPart then
+                AttachPlayerToPlatform()
+            end
+        end)
     else
         if noclipFloorPart then
             noclipFloorPart:Destroy()
             noclipFloorPart = nil
+        end
+        if playerConnection then
+            playerConnection:Disconnect()
+            playerConnection = nil
         end
         NoclipFloorButton.Text = "Noclip Floor: OFF"
         NoclipFloorButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
@@ -126,7 +151,7 @@ end
 
 NoclipFloorButton.MouseButton1Click:Connect(ToggleNoclipFloor)
 
--- FIXED: Use proper time-based movement
+-- Faster update loop
 local lastUpdate = tick()
 RunService.Heartbeat:Connect(function()
     local currentTime = tick()
@@ -138,7 +163,7 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- Make GUI draggable
+-- GUI dragging code (same as before)
 local dragging = false
 local dragInput, dragStart, startPos
 
@@ -168,5 +193,5 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
-print("Steven's hacks GUI loaded successfully!")
-print("Noclip Floor feature FIXED - floor will now properly rise!")
+print("ULTIMATE RISING PLATFORM LOADED!")
+print("Platform rises FAST and keeps player on it!")
