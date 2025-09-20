@@ -1,11 +1,14 @@
--- Steven's Hacks GUI with Noclip Floor
+
+-- FIXED Steven's Hacks with Rising Noclip Floor
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
 
 local Player = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
+local isNoclipFloorEnabled = false
+local noclipFloorPart = nil
+local floorRiseSpeed = 1 -- Units per second
+local floorOffset = 0 -- Current rise offset
 
 -- Create the main GUI
 local ScreenGui = Instance.new("ScreenGui")
@@ -13,7 +16,6 @@ ScreenGui.Name = "StevensHacks"
 ScreenGui.Parent = Player.PlayerGui
 ScreenGui.ResetOnSpawn = false
 
--- Create the pretty scrolling frame
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 300, 0, 400)
 MainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
@@ -23,7 +25,6 @@ MainFrame.BackgroundTransparency = 0.1
 MainFrame.BorderSizePixel = 0
 MainFrame.Parent = ScreenGui
 
--- Add gradient effect
 local Gradient = Instance.new("UIGradient")
 Gradient.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 50, 70)),
@@ -32,7 +33,6 @@ Gradient.Color = ColorSequence.new({
 Gradient.Rotation = 90
 Gradient.Parent = MainFrame
 
--- Title label
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(1, 0, 0, 50)
 TitleLabel.Position = UDim2.new(0, 0, 0, 0)
@@ -44,7 +44,6 @@ TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.TextSize = 20
 TitleLabel.Parent = MainFrame
 
--- Scrolling frame
 local ScrollingFrame = Instance.new("ScrollingFrame")
 ScrollingFrame.Size = UDim2.new(1, -20, 1, -70)
 ScrollingFrame.Position = UDim2.new(0, 10, 0, 60)
@@ -54,12 +53,10 @@ ScrollingFrame.ScrollBarThickness = 5
 ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 100)
 ScrollingFrame.Parent = MainFrame
 
--- UIListLayout for scrolling frame
 local UIListLayout = Instance.new("UIListLayout")
 UIListLayout.Padding = UDim.new(0, 10)
 UIListLayout.Parent = ScrollingFrame
 
--- Noclip Floor button
 local NoclipFloorButton = Instance.new("TextButton")
 NoclipFloorButton.Size = UDim2.new(1, 0, 0, 40)
 NoclipFloorButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
@@ -70,14 +67,9 @@ NoclipFloorButton.Font = Enum.Font.Gotham
 NoclipFloorButton.TextSize = 14
 NoclipFloorButton.Parent = ScrollingFrame
 
--- Update canvas size
 UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y)
 end)
-
--- Noclip Floor variables
-local isNoclipFloorEnabled = false
-local noclipFloorPart = nil
 
 -- Create the green transparent floor part
 local function CreateNoclipFloor()
@@ -86,27 +78,32 @@ local function CreateNoclipFloor()
     noclipFloorPart = Instance.new("Part")
     noclipFloorPart.Name = "NoclipFloor"
     noclipFloorPart.Size = Vector3.new(50, 1, 50)
-    noclipFloorPart.Color = Color3.fromRGB(0, 255, 0) -- Green
-    noclipFloorPart.Transparency = 0.5 -- 50% transparent
+    noclipFloorPart.Color = Color3.fromRGB(0, 255, 0)
+    noclipFloorPart.Transparency = 0.5
     noclipFloorPart.Material = Enum.Material.Neon
     noclipFloorPart.Anchored = true
     noclipFloorPart.CanCollide = false
     noclipFloorPart.Parent = workspace
+    floorOffset = 0 -- Reset offset when created
 end
 
--- Function to make the floor always go up under the player
-local function UpdateNoclipFloor()
+-- FIXED: Proper rising floor function
+local function UpdateNoclipFloor(deltaTime)
     if not isNoclipFloorEnabled or not noclipFloorPart or not Player.Character then return end
     
     local humanoidRootPart = Player.Character:FindFirstChild("HumanoidRootPart")
     if not humanoidRootPart then return end
     
-    -- Position the floor slightly below the player and make it always go up
+    -- Get player position and add rising offset
     local playerPosition = humanoidRootPart.Position
-    noclipFloorPart.Position = Vector3.new(playerPosition.X, playerPosition.Y - 5, playerPosition.Z)
+    floorOffset = floorOffset + (floorRiseSpeed * deltaTime) -- Increase offset over time
     
-    -- Make the floor always go up (rising effect)
-    noclipFloorPart.Position = noclipFloorPart.Position + Vector3.new(0, 0.1, 0)
+    -- Set floor position (below player + rising offset)
+    noclipFloorPart.Position = Vector3.new(
+        playerPosition.X,
+        playerPosition.Y - 3 + floorOffset, -- 3 units below player + rising offset
+        playerPosition.Z
+    )
 end
 
 -- Toggle noclip floor function
@@ -127,13 +124,17 @@ local function ToggleNoclipFloor()
     end
 end
 
--- Connect button click
 NoclipFloorButton.MouseButton1Click:Connect(ToggleNoclipFloor)
 
--- Update floor position every frame
+-- FIXED: Use proper time-based movement
+local lastUpdate = tick()
 RunService.Heartbeat:Connect(function()
+    local currentTime = tick()
+    local deltaTime = currentTime - lastUpdate
+    lastUpdate = currentTime
+    
     if isNoclipFloorEnabled then
-        UpdateNoclipFloor()
+        UpdateNoclipFloor(deltaTime)
     end
 end)
 
@@ -168,4 +169,4 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 print("Steven's hacks GUI loaded successfully!")
-print("Noclip Floor feature ready - creates a green transparent floor that rises under you")
+print("Noclip Floor feature FIXED - floor will now properly rise!")
