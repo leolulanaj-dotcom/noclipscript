@@ -1,13 +1,14 @@
--- FREEZE PLAYER THAT ACTUALLY WORKS
+-- COMPLETE FANCY STEVEN'S HACKS WITH FREEZE
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 
 local Player = Players.LocalPlayer
 local isStealthNoclipEnabled = false
 local selectedPlayer = nil
 
--- STEALTH NOCLIP (keep this part - it works!)
+-- STEALTH NOCLIP
 local function StealthNoclip()
     if not isStealthNoclipEnabled or not Player.Character then return end
     
@@ -34,98 +35,217 @@ local function ToggleStealthNoclip()
     end
 end
 
--- FIXED FREEZE: This actually works by using a different method
+-- FREEZE PLAYER
 local function FreezeTargetPlayer(targetPlayer)
     if not targetPlayer or targetPlayer == Player then return end
     
-    -- METHOD THAT WORKS: Create invisible barriers around the player
     if targetPlayer.Character then
         local rootPart = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
         if rootPart then
-            -- Create invisible walls around the player (THIS ACTUALLY WORKS)
+            -- Create invisible walls
             local freezeBox = Instance.new("Part")
             freezeBox.Name = "FreezeBox"
             freezeBox.Size = Vector3.new(10, 10, 10)
-            freezeBox.Transparency = 1  -- Invisible
+            freezeBox.Transparency = 1
             freezeBox.Anchored = true
             freezeBox.CanCollide = true
             freezeBox.Position = rootPart.Position
             freezeBox.Parent = workspace
             
-            -- Also freeze their character directly
+            -- Freeze character
             local humanoid = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
             if humanoid then
-                humanoid.WalkSpeed = 0  -- Can't move
-                humanoid.JumpPower = 0  -- Can't jump
+                humanoid.WalkSpeed = 0
+                humanoid.JumpPower = 0
             end
             
-            print("Froze player: " .. targetPlayer.Name)
-            
-            -- Show confirmation
+            -- Fancy confirmation GUI
             local confirmGui = Instance.new("ScreenGui")
             confirmGui.Name = "FreezeConfirm"
             confirmGui.Parent = Player.PlayerGui
+            confirmGui.ResetOnSpawn = false
             
             local confirmFrame = Instance.new("Frame")
-            confirmFrame.Size = UDim2.new(0, 250, 0, 80)
-            confirmFrame.Position = UDim2.new(0.5, -125, 0.5, -40)
+            confirmFrame.Size = UDim2.new(0, 300, 0, 100)
+            confirmFrame.Position = UDim2.new(0.5, -150, 0.5, -50)
             confirmFrame.AnchorPoint = Vector2.new(0.5, 0.5)
             confirmFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
             confirmFrame.BackgroundTransparency = 0.1
             confirmFrame.BorderSizePixel = 0
             confirmFrame.Parent = confirmGui
             
+            local gradient = Instance.new("UIGradient")
+            gradient.Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 100, 150)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 50, 100))
+            })
+            gradient.Rotation = 90
+            gradient.Parent = confirmFrame
+            
             local confirmText = Instance.new("TextLabel")
             confirmText.Size = UDim2.new(1, 0, 1, 0)
             confirmText.BackgroundTransparency = 1
-            confirmText.Text = "✓ FROZE: " .. targetPlayer.Name .. "\nThey can't move!"
+            confirmText.Text = "✓ FROZE " .. targetPlayer.Name .. "!\nThey can't move for 10 seconds!"
             confirmText.TextColor3 = Color3.fromRGB(255, 255, 255)
             confirmText.Font = Enum.Font.GothamBold
-            confirmText.TextSize = 16
+            confirmText.TextSize = 18
             confirmText.TextYAlignment = Enum.TextYAlignment.Center
             confirmText.Parent = confirmFrame
             
-            -- Auto-remove after 3 seconds
-            delay(3, function()
-                confirmGui:Destroy()
-            end)
-            
-            -- Auto-remove freeze after 10 seconds
+            delay(3, function() confirmGui:Destroy() end)
             delay(10, function()
-                if freezeBox then
-                    freezeBox:Destroy()
-                end
+                if freezeBox then freezeBox:Destroy() end
                 if humanoid then
-                    humanoid.WalkSpeed = 16  -- Reset speed
-                    humanoid.JumpPower = 50  -- Reset jump
+                    humanoid.WalkSpeed = 16
+                    humanoid.JumpPower = 50
                 end
             end)
         end
     end
 end
 
--- GUI SETUP (Change text to "Freeze Player")
--- [KEEP ALL THE SAME GUI CODE FROM BEFORE]
--- BUT CHANGE THIS LINE:
-local BlindButton = Instance.new("TextButton")
-BlindButton.Size = UDim2.new(1, 0, 0, 40)
-BlindButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-BlindButton.BackgroundTransparency = 0.5
-BlindButton.Text = "Freeze Player"  -- CHANGED FROM "Blind Player"
-BlindButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-BlindButton.Font = Enum.Font.Gotham
-BlindButton.TextSize = 14
-BlindButton.Parent = ScrollingFrame
+-- FANCY STEVEN'S HACKS GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "StevensHacks"
+ScreenGui.Parent = Player.PlayerGui
+ScreenGui.ResetOnSpawn = false
 
--- AND CHANGE THIS LINE:
-SubmitButton.Text = "FREEZE PLAYER"  -- CHANGED FROM "BLIND PLAYER"
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 350, 0, 450)
+MainFrame.Position = UDim2.new(0.5, -175, 0.5, -225)
+MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+MainFrame.BackgroundTransparency = 0.1
+MainFrame.BorderSizePixel = 0
+MainFrame.Parent = ScreenGui
 
--- [KEEP ALL OTHER GUI CODE THE SAME...]
+local mainGradient = Instance.new("UIGradient")
+mainGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 50, 70)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 20, 30))
+})
+mainGradient.Rotation = 90
+mainGradient.Parent = MainFrame
 
--- Connect buttons
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, 0, 0, 60)
+TitleLabel.Position = UDim2.new(0, 0, 0, 0)
+TitleLabel.BackgroundColor3 = Color3.fromRGB(0, 100, 150)
+TitleLabel.BackgroundTransparency = 0.2
+TitleLabel.Text = "STEVEN'S HACKS"
+TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.TextSize = 24
+TitleLabel.TextYAlignment = Enum.TextYAlignment.Center
+TitleLabel.Parent = MainFrame
+
+local titleGradient = Instance.new("UIGradient")
+titleGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 150, 200)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 80, 120))
+})
+titleGradient.Rotation = 90
+titleGradient.Parent = TitleLabel
+
+local ScrollingFrame = Instance.new("ScrollingFrame")
+ScrollingFrame.Size = UDim2.new(1, -20, 1, -80)
+ScrollingFrame.Position = UDim2.new(0, 10, 0, 70)
+ScrollingFrame.BackgroundTransparency = 1
+ScrollingFrame.BorderSizePixel = 0
+ScrollingFrame.ScrollBarThickness = 6
+ScrollingFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 120)
+ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 200)
+ScrollingFrame.Parent = MainFrame
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Padding = UDim.new(0, 15)
+UIListLayout.Parent = ScrollingFrame
+
+local NoclipFloorButton = Instance.new("TextButton")
+NoclipFloorButton.Size = UDim2.new(1, 0, 0, 50)
+NoclipFloorButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+NoclipFloorButton.BackgroundTransparency = 0.5
+NoclipFloorButton.Text = "Float Mode: OFF"
+NoclipFloorButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+NoclipFloorButton.Font = Enum.Font.GothamBold
+NoclipFloorButton.TextSize = 16
+NoclipFloorButton.Parent = ScrollingFrame
+
+local FreezeButton = Instance.new("TextButton")
+FreezeButton.Size = UDim2.new(1, 0, 0, 50)
+FreezeButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+FreezeButton.BackgroundTransparency = 0.5
+FreezeButton.Text = "Freeze Player"
+FreezeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+FreezeButton.Font = Enum.Font.GothamBold
+FreezeButton.TextSize = 16
+FreezeButton.Parent = ScrollingFrame
+
+local PlayerFrame = Instance.new("Frame")
+PlayerFrame.Size = UDim2.new(0, 280, 0, 350)
+PlayerFrame.Position = UDim2.new(0, 370, 0.5, -175)
+PlayerFrame.AnchorPoint = Vector2.new(0, 0.5)
+PlayerFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+PlayerFrame.BackgroundTransparency = 0.1
+PlayerFrame.BorderSizePixel = 0
+PlayerFrame.Visible = false
+PlayerFrame.Parent = MainFrame
+
+local playerGradient = Instance.new("UIGradient")
+playerGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(60, 60, 80)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(40, 40, 60))
+})
+playerGradient.Rotation = 90
+playerGradient.Parent = PlayerFrame
+
+local PlayerTitle = Instance.new("TextLabel")
+PlayerTitle.Size = UDim2.new(1, 0, 0, 50)
+PlayerTitle.Position = UDim2.new(0, 0, 0, 0)
+PlayerTitle.BackgroundColor3 = Color3.fromRGB(0, 100, 150)
+PlayerTitle.BackgroundTransparency = 0.2
+PlayerTitle.Text = "SELECT PLAYER"
+PlayerTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+PlayerTitle.Font = Enum.Font.GothamBold
+PlayerTitle.TextSize = 18
+PlayerTitle.TextYAlignment = Enum.TextYAlignment.Center
+PlayerTitle.Parent = PlayerFrame
+
+local PlayerScrolling = Instance.new("ScrollingFrame")
+PlayerScrolling.Size = UDim2.new(1, -20, 1, -120)
+PlayerScrolling.Position = UDim2.new(0, 10, 0, 60)
+PlayerScrolling.BackgroundTransparency = 1
+PlayerScrolling.BorderSizePixel = 0
+PlayerScrolling.ScrollBarThickness = 5
+PlayerScrolling.CanvasSize = UDim2.new(0, 0, 0, 0)
+PlayerScrolling.Parent = PlayerFrame
+
+local PlayerListLayout = Instance.new("UIListLayout")
+PlayerListLayout.Padding = UDim.new(0, 8)
+PlayerListLayout.Parent = PlayerScrolling
+
+local SubmitButton = Instance.new("TextButton")
+SubmitButton.Size = UDim2.new(1, -20, 0, 40)
+SubmitButton.Position = UDim2.new(0, 10, 1, -50)
+SubmitButton.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+SubmitButton.BackgroundTransparency = 0.3
+SubmitButton.Text = "FREEZE PLAYER"
+SubmitButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+SubmitButton.Font = Enum.Font.GothamBold
+SubmitButton.TextSize = 16
+SubmitButton.Parent = PlayerFrame
+
+UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y)
+end)
+
+PlayerListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    PlayerScrolling.CanvasSize = UDim2.new(0, 0, 0, PlayerListLayout.AbsoluteContentSize.Y)
+end)
+
 NoclipFloorButton.MouseButton1Click:Connect(ToggleStealthNoclip)
 
-BlindButton.MouseButton1Click:Connect(function()
+FreezeButton.MouseButton1Click:Connect(function()
     PlayerFrame.Visible = not PlayerFrame.Visible
     
     if PlayerFrame.Visible then
@@ -136,13 +256,13 @@ BlindButton.MouseButton1Click:Connect(function()
         for _, player in pairs(Players:GetPlayers()) do
             if player ~= Player then
                 local playerButton = Instance.new("TextButton")
-                playerButton.Size = UDim2.new(1, 0, 0, 30)
+                playerButton.Size = UDim2.new(1, 0, 0, 35)
                 playerButton.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
                 playerButton.BackgroundTransparency = 0.5
                 playerButton.Text = player.Name
                 playerButton.TextColor3 = Color3.fromRGB(255, 255, 255)
                 playerButton.Font = Enum.Font.Gotham
-                playerButton.TextSize = 12
+                playerButton.TextSize = 14
                 playerButton.Parent = PlayerScrolling
                 
                 playerButton.MouseButton1Click:Connect(function()
@@ -163,17 +283,45 @@ end)
 
 SubmitButton.MouseButton1Click:Connect(function()
     if selectedPlayer then
-        FreezeTargetPlayer(selectedPlayer)  -- CHANGED FROM BlindTargetPlayer
+        FreezeTargetPlayer(selectedPlayer)
         PlayerFrame.Visible = false
     end
 end)
 
--- Stealth update loop
 RunService.Heartbeat:Connect(function()
     if isStealthNoclipEnabled then
         StealthNoclip()
     end
 end)
 
-print("FREEZE PLAYER HACK LOADED!")
-print("Float mode works + Freeze actually stops players from moving!")
+local dragging = false
+local dragInput, dragStart, startPos
+
+TitleLabel.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+TitleLabel.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+print("STEVEN'S HACKS LOADED!")
+print("Fancy UI + Float Mode + Freeze Player!")
