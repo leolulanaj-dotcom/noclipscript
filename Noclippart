@@ -1,4 +1,4 @@
--- COMPLETE FANCY STEVEN'S HACKS WITH FREEZE
+-- COMPLETE FANCY STEVEN'S HACKS WITH FREEZE + AUTO SPEED BOOST
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -32,6 +32,31 @@ local function ToggleStealthNoclip()
     else
         NoclipFloorButton.Text = "Float Mode: OFF"
         NoclipFloorButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+    end
+end
+
+-- AUTO SPEED BOOST WHEN STEALING (NEW)
+local function AutoSpeedBoost()
+    if not Player.Character then return end
+    
+    local humanoid = Player.Character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return end
+    
+    -- Detect stealing (walkspeed <= 18)
+    if humanoid.WalkSpeed <= 18 then
+        -- Boost speed to 64 when stealing detected!
+        humanoid.WalkSpeed = 64
+        print("Speed boost activated! Stealing detected.")
+        
+        -- Visual feedback
+        local boostEffect = Instance.new("ParticleEmitter")
+        boostEffect.Color = ColorSequence.new(Color3.fromRGB(0, 255, 255))
+        boostEffect.Size = NumberSequence.new(0.5)
+        boostEffect.Lifetime = NumberRange.new(1)
+        boostEffect.Rate = 20
+        boostEffect.Speed = NumberRange.new(5)
+        boostEffect.Parent = humanoid.Parent:FindFirstChild("Head") or humanoid.Parent:FindFirstChild("HumanoidRootPart")
+        delay(2, function() if boostEffect then boostEffect:Destroy() end end)
     end
 end
 
@@ -288,10 +313,14 @@ SubmitButton.MouseButton1Click:Connect(function()
     end
 end)
 
+-- UPDATED HEARTBEAT WITH AUTO SPEED BOOST
 RunService.Heartbeat:Connect(function()
     if isStealthNoclipEnabled then
         StealthNoclip()
     end
+    
+    -- AUTO SPEED BOOST (ALWAYS ACTIVE)
+    AutoSpeedBoost()
 end)
 
 local dragging = false
@@ -324,4 +353,4 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 print("STEVEN'S HACKS LOADED!")
-print("Fancy UI + Float Mode + Freeze Player!")
+print("Fancy UI + Float Mode + Freeze Player + Auto Speed Boost!")
