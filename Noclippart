@@ -57,8 +57,14 @@ local function AutoSpeedBoost()
     local humanoid = Player.Character:FindFirstChildOfClass("Humanoid")
     if not humanoid then return end
     
-    -- Detect stealing (walkspeed <= 18) and boost to 64
-    if humanoid.WalkSpeed <= 18 then
+    -- Store original walk speed if not already stored
+    if not humanoid:GetAttribute("OriginalWalkSpeed") then
+        humanoid:SetAttribute("OriginalWalkSpeed", humanoid.WalkSpeed)
+    end
+    
+    -- Boost speed when it's different from original (indicating stealing)
+    local originalSpeed = humanoid:GetAttribute("OriginalWalkSpeed") or 16
+    if humanoid.WalkSpeed ~= 64 and humanoid.WalkSpeed ~= originalSpeed then
         humanoid.WalkSpeed = 64
         print("Speed boost activated! Stealing detected.")
         
@@ -253,6 +259,7 @@ local function CreateRemoteExplorer()
     DetailsFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
     DetailsFrame.BackgroundTransparency = 0.2
     DetailsFrame.BorderSizePixel = 0
+    DetailsFrame.Name = "DetailsFrame"
     DetailsFrame.Parent = ExplorerFrame
 
     local DetailsLabel = Instance.new("TextLabel")
@@ -266,74 +273,12 @@ local function CreateRemoteExplorer()
     DetailsLabel.TextXAlignment = Enum.TextXAlignment.Left
     DetailsLabel.TextYAlignment = Enum.TextYAlignment.Top
     DetailsLabel.TextWrapped = true
+    DetailsLabel.Name = "DetailsLabel"
     DetailsLabel.Parent = DetailsFrame
 
     local RemoteListLayout = Instance.new("UIListLayout")
     RemoteListLayout.Padding = UDim.new(0, 5)
     RemoteListLayout.Parent = RemotesScrolling
-
-    -- Populate with RemoteEvents
-    local function PopulateRemotes()
-        for _, child in pairs(RemotesScrolling:GetChildren()) do
-            if child:IsA("TextButton") then
-                child:Destroy()
-            end
-        end
-
-        local allRemotes = {}
-        
-        -- Check ReplicatedStorage first (most common)
-        for _, remote in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
-            if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
-                table.insert(allRemotes, remote)
-            end
-        end
-        
-        -- Check other services
-        local services = {workspace, game:GetService("ServerStorage"), game:GetService("ServerScriptService")}
-        for _, service in pairs(services) do
-            for _, remote in pairs(service:GetDescendants()) do
-                if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
-                    table.insert(allRemotes, remote)
-                end
-            end
-        end
-
-        for _, remote in pairs(allRemotes) do
-            local remoteButton = Instance.new("TextButton")
-            remoteButton.Size = UDim2.new(1, 0, 0, 30)
-            remoteButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-            remoteButton.BackgroundTransparency = 0.5
-            remoteButton.Text = remote.Name .. " (" .. remote.ClassName .. ")"
-            remoteButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-            remoteButton.Font = Enum.Font.Gotham
-            remoteButton.TextSize = 12
-            remoteButton.TextXAlignment = Enum.TextXAlignment.Left
-            remoteButton.Parent = RemotesScrolling
-
-            remoteButton.MouseButton1Click:Connect(function()
-                -- Show details
-                local detailsText = "Name: " .. remote.Name .. "\n"
-                detailsText = detailsText .. "Class: " .. remote.ClassName .. "\n"
-                detailsText = detailsText .. "Parent: " .. remote.Parent:GetFullName() .. "\n"
-                detailsText = detailsText .. "Path: " .. remote:GetFullName() .. "\n\n"
-                
-                -- Get siblings
-                detailsText = detailsText .. "Siblings in " .. remote.Parent.Name .. ":\n"
-                for _, sibling in pairs(remote.Parent:GetChildren()) do
-                    if sibling ~= remote then
-                        detailsText = detailsText .. "• " .. sibling.Name .. " (" .. sibling.ClassName .. ")\n"
-                    end
-                end
-                
-                DetailsLabel.Text = detailsText
-            end)
-        end
-
-        RemoteListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            RemotesScrolling.CanvasSize = UDim2.new(0, 0, 0, RemoteListLayout.AbsoluteContentSize.Y)
-        end)
-    end
 
     -- Close button
     local CloseButton = Instance.new("TextButton")
@@ -372,15 +317,70 @@ RemoteExplorerButton.MouseButton1Click:Connect(function()
     remoteExplorer.Visible = not remoteExplorer.Visible
     if remoteExplorer.Visible then
         -- Refresh the list when opened
-        pcall(function()
-            -- This will repopulate the remote list
-            for _, child in pairs(remoteExplorer:FindFirstChild("RemotesScrolling"):GetChildren()) do
+        local RemotesScrolling = remoteExplorer:FindFirstChild("RemotesScrolling")
+        if RemotesScrolling then
+            -- Clear existing buttons
+            for _, child in pairs(RemotesScrolling:GetChildren()) do
                 if child:IsA("TextButton") then
                     child:Destroy()
                 end
             end
-            -- Recreate the population function here or call it
-        end)
+            
+            -- Repopulate with current remotes
+            local allRemotes = {}
+            
+            -- Check ReplicatedStorage first (most common)
+            for _, remote in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+                if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
+                    table.insert(allRemotes, remote)
+                end
+            end
+            
+            -- Check other services
+            local services = {workspace, game:GetService("ServerStorage"), game:GetService("ServerScriptService")}
+            for _, service in pairs(services) do
+                for _, remote in pairs(service:GetDescendants()) do
+                    if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
+                        table.insert(allRemotes, remote)
+                    end
+                end
+            end
+
+            for _, remote in pairs(allRemotes) do
+                local remoteButton = Instance.new("TextButton")
+                remoteButton.Size = UDim2.new(1, 0, 0, 30)
+                remoteButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+                remoteButton.BackgroundTransparency = 0.5
+                remoteButton.Text = remote.Name .. " (" .. remote.ClassName .. ")"
+                remoteButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+                remoteButton.Font = Enum.Font.Gotham
+                remoteButton.TextSize = 12
+                remoteButton.TextXAlignment = Enum.TextXAlignment.Left
+                remoteButton.Parent = RemotesScrolling
+
+                remoteButton.MouseButton1Click:Connect(function()
+                    -- Show details
+                    local DetailsFrame = remoteExplorer:FindFirstChild("DetailsFrame")
+                    local DetailsLabel = DetailsFrame and DetailsFrame:FindFirstChild("DetailsLabel")
+                    if DetailsLabel then
+                        local detailsText = "Name: " .. remote.Name .. "\n"
+                        detailsText = detailsText .. "Class: " .. remote.ClassName .. "\n"
+                        detailsText = detailsText .. "Parent: " .. remote.Parent:GetFullName() .. "\n"
+                        detailsText = detailsText .. "Path: " .. remote:GetFullName() .. "\n\n"
+                        
+                        -- Get siblings
+                        detailsText = detailsText .. "Siblings in " .. remote.Parent.Name .. ":\n"
+                        for _, sibling in pairs(remote.Parent:GetChildren()) do
+                            if sibling ~= remote then
+                                detailsText = detailsText .. "• " .. sibling.Name .. " (" .. sibling.ClassName .. ")\n"
+                            end
+                        end
+                        
+                        DetailsLabel.Text = detailsText
+                    end
+                end)
+            end
+        end
     end
 end)
 
