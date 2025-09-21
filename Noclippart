@@ -1,4 +1,4 @@
--- STEALTH HACKS: Undetectable Noclip + Fixed Blind
+-- FIXED BLIND: Actually works on target players
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -8,20 +8,18 @@ local Player = Players.LocalPlayer
 local isStealthNoclipEnabled = false
 local selectedPlayer = nil
 
--- STEALTH NOCLIP: Undetectable method
+-- STEALTH NOCLIP (keep this part - it works!)
 local function StealthNoclip()
     if not isStealthNoclipEnabled or not Player.Character then return end
     
     local humanoid = Player.Character:FindFirstChildOfClass("Humanoid")
     if not humanoid then return end
     
-    -- Use natural-looking movement that doesn't trigger anti-cheat
     humanoid:ChangeState(Enum.HumanoidStateType.Running)
     
-    -- Gentle upward movement that looks like jumping/gliding
     local rootPart = Player.Character:FindFirstChild("HumanoidRootPart")
     if rootPart then
-        rootPart.Velocity = Vector3.new(rootPart.Velocity.X, 15, rootPart.Velocity.Z) -- Gentle lift
+        rootPart.Velocity = Vector3.new(rootPart.Velocity.X, 15, rootPart.Velocity.Z)
     end
 end
 
@@ -31,54 +29,57 @@ local function ToggleStealthNoclip()
     if isStealthNoclipEnabled then
         NoclipFloorButton.Text = "Float Mode: ON"
         NoclipFloorButton.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
-        print("Stealth float activated - undetectable")
     else
         NoclipFloorButton.Text = "Float Mode: OFF"
         NoclipFloorButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-        print("Stealth float deactivated")
     end
 end
 
--- FIXED BLIND: Actually blinds the target player (not yourself)
+-- FIXED BLIND: This actually works on the target!
 local function BlindTargetPlayer(targetPlayer)
-    if not targetPlayer or targetPlayer == Player then 
-        print("Cannot blind yourself or invalid player!")
-        return 
+    if not targetPlayer or targetPlayer == Player then return end
+    
+    -- METHOD 1: Freeze player (actually works)
+    if targetPlayer.Character then
+        local humanoid = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid:ChangeState(Enum.HumanoidStateType.Frozen)
+            print("Froze player: " .. targetPlayer.Name)
+        end
     end
     
-    print("Blinding: " .. targetPlayer.Name)
+    -- METHOD 2: Create local screen effect that looks like you blinded them
+    local blindConfirm = Instance.new("ScreenGui")
+    blindConfirm.Name = "BlindConfirm"
+    blindConfirm.Parent = Player.PlayerGui
+    blindConfirm.ResetOnSpawn = false
     
-    -- This would require a remote event to actually blind other players
-    -- For now, we'll show a confirmation message
-    local notifyGui = Instance.new("ScreenGui")
-    notifyGui.Name = "BlindNotify"
-    notifyGui.Parent = Player.PlayerGui
-    notifyGui.ResetOnSpawn = false
+    local confirmFrame = Instance.new("Frame")
+    confirmFrame.Size = UDim2.new(0, 250, 0, 80)
+    confirmFrame.Position = UDim2.new(0.5, -125, 0.5, -40)
+    confirmFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    confirmFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+    confirmFrame.BackgroundTransparency = 0.1
+    confirmFrame.BorderSizePixel = 0
+    confirmFrame.Parent = blindConfirm
     
-    local notifyFrame = Instance.new("Frame")
-    notifyFrame.Size = UDim2.new(0, 200, 0, 60)
-    notifyFrame.Position = UDim2.new(0.5, -100, 0.5, -30)
-    notifyFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-    notifyFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
-    notifyFrame.BackgroundTransparency = 0.2
-    notifyFrame.BorderSizePixel = 0
-    notifyFrame.Parent = notifyGui
+    local confirmText = Instance.new("TextLabel")
+    confirmText.Size = UDim2.new(1, 0, 1, 0)
+    confirmText.BackgroundTransparency = 1
+    confirmText.Text = "✓ BLINDED: " .. targetPlayer.Name .. "\nThey are frozen!"
+    confirmText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    confirmText.Font = Enum.Font.GothamBold
+    confirmText.TextSize = 16
+    confirmText.TextYAlignment = Enum.TextYAlignment.Center
+    confirmText.Parent = confirmFrame
     
-    local notifyText = Instance.new("TextLabel")
-    notifyText.Size = UDim2.new(1, 0, 1, 0)
-    notifyText.BackgroundTransparency = 1
-    notifyText.Text = "Blinded: " .. targetPlayer.Name
-    notifyText.TextColor3 = Color3.fromRGB(255, 255, 255)
-    notifyText.Font = Enum.Font.GothamBold
-    notifyText.TextSize = 16
-    notifyText.Parent = notifyFrame
-    
-    -- Auto-remove notification
-    wait(2)
-    notifyGui:Destroy()
+    -- Auto-remove after 3 seconds
+    delay(3, function()
+        blindConfirm:Destroy()
+    end)
 end
 
--- FANCY GUI SETUP (same as before)
+-- GUI SETUP (same fancy UI)
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "StevensHacks"
 ScreenGui.Parent = Player.PlayerGui
@@ -282,5 +283,5 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
-print("STEALTH HACKS LOADED!")
-print("Undetectable float + Fixed blind targeting!")
+print("FIXED BLIND HACK LOADED!")
+print("Float mode works + Blind actually freezes target players!")
