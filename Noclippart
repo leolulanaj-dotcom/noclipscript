@@ -210,5 +210,184 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
+-- REMOTE EVENT EXPLORER ADDITION
+local function CreateRemoteExplorer()
+    local ExplorerGui = Instance.new("ScreenGui")
+    ExplorerGui.Name = "RemoteExplorer"
+    ExplorerGui.Parent = Player.PlayerGui
+    ExplorerGui.ResetOnSpawn = false
+
+    local ExplorerFrame = Instance.new("Frame")
+    ExplorerFrame.Size = UDim2.new(0, 500, 0, 400)
+    ExplorerFrame.Position = UDim2.new(0.5, -250, 0.5, -200)
+    ExplorerFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    ExplorerFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+    ExplorerFrame.BackgroundTransparency = 0.1
+    ExplorerFrame.BorderSizePixel = 0
+    ExplorerFrame.Visible = false
+    ExplorerFrame.Parent = ExplorerGui
+
+    local ExplorerTitle = Instance.new("TextLabel")
+    ExplorerTitle.Size = UDim2.new(1, 0, 0, 40)
+    ExplorerTitle.Position = UDim2.new(0, 0, 0, 0)
+    ExplorerTitle.BackgroundColor3 = Color3.fromRGB(0, 100, 150)
+    ExplorerTitle.BackgroundTransparency = 0.2
+    ExplorerTitle.Text = "REMOTE EVENT EXPLORER"
+    ExplorerTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ExplorerTitle.Font = Enum.Font.GothamBold
+    ExplorerTitle.TextSize = 18
+    ExplorerTitle.Parent = ExplorerFrame
+
+    local RemotesScrolling = Instance.new("ScrollingFrame")
+    RemotesScrolling.Size = UDim2.new(0.5, -10, 1, -50)
+    RemotesScrolling.Position = UDim2.new(0, 5, 0, 45)
+    RemotesScrolling.BackgroundTransparency = 1
+    RemotesScrolling.BorderSizePixel = 0
+    RemotesScrolling.ScrollBarThickness = 5
+    RemotesScrolling.CanvasSize = UDim2.new(0, 0, 0, 0)
+    RemotesScrolling.Parent = ExplorerFrame
+
+    local DetailsFrame = Instance.new("Frame")
+    DetailsFrame.Size = UDim2.new(0.5, -10, 1, -50)
+    DetailsFrame.Position = UDim2.new(0.5, 5, 0, 45)
+    DetailsFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    DetailsFrame.BackgroundTransparency = 0.2
+    DetailsFrame.BorderSizePixel = 0
+    DetailsFrame.Parent = ExplorerFrame
+
+    local DetailsLabel = Instance.new("TextLabel")
+    DetailsLabel.Size = UDim2.new(1, -10, 1, -10)
+    DetailsLabel.Position = UDim2.new(0, 5, 0, 5)
+    DetailsLabel.BackgroundTransparency = 1
+    DetailsLabel.Text = "Select a RemoteEvent to view details"
+    DetailsLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    DetailsLabel.Font = Enum.Font.Gotham
+    DetailsLabel.TextSize = 12
+    DetailsLabel.TextXAlignment = Enum.TextXAlignment.Left
+    DetailsLabel.TextYAlignment = Enum.TextYAlignment.Top
+    DetailsLabel.TextWrapped = true
+    DetailsLabel.Parent = DetailsFrame
+
+    local RemoteListLayout = Instance.new("UIListLayout")
+    RemoteListLayout.Padding = UDim.new(0, 5)
+    RemoteListLayout.Parent = RemotesScrolling
+
+    -- Populate with RemoteEvents
+    local function PopulateRemotes()
+        for _, child in pairs(RemotesScrolling:GetChildren()) do
+            if child:IsA("TextButton") then
+                child:Destroy()
+            end
+        end
+
+        local allRemotes = {}
+        
+        -- Check ReplicatedStorage first (most common)
+        for _, remote in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+            if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
+                table.insert(allRemotes, remote)
+            end
+        end
+        
+        -- Check other services
+        local services = {workspace, game:GetService("ServerStorage"), game:GetService("ServerScriptService")}
+        for _, service in pairs(services) do
+            for _, remote in pairs(service:GetDescendants()) do
+                if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
+                    table.insert(allRemotes, remote)
+                end
+            end
+        end
+
+        for _, remote in pairs(allRemotes) do
+            local remoteButton = Instance.new("TextButton")
+            remoteButton.Size = UDim2.new(1, 0, 0, 30)
+            remoteButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+            remoteButton.BackgroundTransparency = 0.5
+            remoteButton.Text = remote.Name .. " (" .. remote.ClassName .. ")"
+            remoteButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+            remoteButton.Font = Enum.Font.Gotham
+            remoteButton.TextSize = 12
+            remoteButton.TextXAlignment = Enum.TextXAlignment.Left
+            remoteButton.Parent = RemotesScrolling
+
+            remoteButton.MouseButton1Click:Connect(function()
+                -- Show details
+                local detailsText = "Name: " .. remote.Name .. "\n"
+                detailsText = detailsText .. "Class: " .. remote.ClassName .. "\n"
+                detailsText = detailsText .. "Parent: " .. remote.Parent:GetFullName() .. "\n"
+                detailsText = detailsText .. "Path: " .. remote:GetFullName() .. "\n\n"
+                
+                -- Get siblings
+                detailsText = detailsText .. "Siblings in " .. remote.Parent.Name .. ":\n"
+                for _, sibling in pairs(remote.Parent:GetChildren()) do
+                    if sibling ~= remote then
+                        detailsText = detailsText .. "• " .. sibling.Name .. " (" .. sibling.ClassName .. ")\n"
+                    end
+                end
+                
+                DetailsLabel.Text = detailsText
+            end)
+        end
+
+        RemoteListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            RemotesScrolling.CanvasSize = UDim2.new(0, 0, 0, RemoteListLayout.AbsoluteContentSize.Y)
+        end)
+    end
+
+    -- Close button
+    local CloseButton = Instance.new("TextButton")
+    CloseButton.Size = UDim2.new(0, 100, 0, 30)
+    CloseButton.Position = UDim2.new(0.5, -50, 1, -35)
+    CloseButton.AnchorPoint = Vector2.new(0.5, 0)
+    CloseButton.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
+    CloseButton.Text = "CLOSE"
+    CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    CloseButton.Font = Enum.Font.GothamBold
+    CloseButton.TextSize = 12
+    CloseButton.Parent = ExplorerFrame
+
+    CloseButton.MouseButton1Click:Connect(function()
+        ExplorerFrame.Visible = false
+    end)
+
+    return ExplorerFrame
+end
+
+-- Add Remote Explorer button to main GUI
+local RemoteExplorerButton = Instance.new("TextButton")
+RemoteExplorerButton.Size = UDim2.new(1, 0, 0, 40)
+RemoteExplorerButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+RemoteExplorerButton.BackgroundTransparency = 0.5
+RemoteExplorerButton.Text = "Remote Explorer"
+RemoteExplorerButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+RemoteExplorerButton.Font = Enum.Font.GothamBold
+RemoteExplorerButton.TextSize = 14
+RemoteExplorerButton.Parent = ScrollingFrame
+
+-- Create remote explorer (but don't show it yet)
+local remoteExplorer = CreateRemoteExplorer()
+
+RemoteExplorerButton.MouseButton1Click:Connect(function()
+    remoteExplorer.Visible = not remoteExplorer.Visible
+    if remoteExplorer.Visible then
+        -- Refresh the list when opened
+        pcall(function()
+            -- This will repopulate the remote list
+            for _, child in pairs(remoteExplorer:FindFirstChild("RemotesScrolling"):GetChildren()) do
+                if child:IsA("TextButton") then
+                    child:Destroy()
+                end
+            end
+            -- Recreate the population function here or call it
+        end)
+    end
+end)
+
+-- Update scrolling frame size
+UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y)
+end)
+
 print("STEVEN'S HACKS LOADED!")
 print("Float Mode + Speed Boost (Toggleable)!")
