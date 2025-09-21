@@ -1,4 +1,4 @@
--- COMPLETE FANCY STEVEN'S HACKS WITH FREEZE + AUTO SPEED BOOST
+-- STEVEN'S HACKS - FLOAT & SPEED BOOST ONLY
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -6,7 +6,7 @@ local TweenService = game:GetService("TweenService")
 
 local Player = Players.LocalPlayer
 local isStealthNoclipEnabled = false
-local selectedPlayer = nil
+local isSpeedBoostEnabled = false
 
 -- STEALTH NOCLIP
 local function StealthNoclip()
@@ -35,16 +35,30 @@ local function ToggleStealthNoclip()
     end
 end
 
--- AUTO SPEED BOOST WHEN STEALING (NEW)
+-- AUTO SPEED BOOST TOGGLE
+local function ToggleSpeedBoost()
+    isSpeedBoostEnabled = not isSpeedBoostEnabled
+    
+    if isSpeedBoostEnabled then
+        SpeedBoostButton.Text = "Speed Boost: ON"
+        SpeedBoostButton.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+        print("Speed boost enabled - will activate when stealing")
+    else
+        SpeedBoostButton.Text = "Speed Boost: OFF"
+        SpeedBoostButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+        print("Speed boost disabled")
+    end
+end
+
+-- AUTO SPEED BOOST WHEN STEALING
 local function AutoSpeedBoost()
-    if not Player.Character then return end
+    if not isSpeedBoostEnabled or not Player.Character then return end
     
     local humanoid = Player.Character:FindFirstChildOfClass("Humanoid")
     if not humanoid then return end
     
-    -- Detect stealing (walkspeed <= 18)
+    -- Detect stealing (walkspeed <= 18) and boost to 64
     if humanoid.WalkSpeed <= 18 then
-        -- Boost speed to 64 when stealing detected!
         humanoid.WalkSpeed = 64
         print("Speed boost activated! Stealing detected.")
         
@@ -55,74 +69,12 @@ local function AutoSpeedBoost()
         boostEffect.Lifetime = NumberRange.new(1)
         boostEffect.Rate = 20
         boostEffect.Speed = NumberRange.new(5)
-        boostEffect.Parent = humanoid.Parent:FindFirstChild("Head") or humanoid.Parent:FindFirstChild("HumanoidRootPart")
-        delay(2, function() if boostEffect then boostEffect:Destroy() end end)
-    end
-end
-
--- FREEZE PLAYER
-local function FreezeTargetPlayer(targetPlayer)
-    if not targetPlayer or targetPlayer == Player then return end
-    
-    if targetPlayer.Character then
-        local rootPart = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if rootPart then
-            -- Create invisible walls
-            local freezeBox = Instance.new("Part")
-            freezeBox.Name = "FreezeBox"
-            freezeBox.Size = Vector3.new(10, 10, 10)
-            freezeBox.Transparency = 1
-            freezeBox.Anchored = true
-            freezeBox.CanCollide = true
-            freezeBox.Position = rootPart.Position
-            freezeBox.Parent = workspace
-            
-            -- Freeze character
-            local humanoid = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                humanoid.WalkSpeed = 0
-                humanoid.JumpPower = 0
-            end
-            
-            -- Fancy confirmation GUI
-            local confirmGui = Instance.new("ScreenGui")
-            confirmGui.Name = "FreezeConfirm"
-            confirmGui.Parent = Player.PlayerGui
-            confirmGui.ResetOnSpawn = false
-            
-            local confirmFrame = Instance.new("Frame")
-            confirmFrame.Size = UDim2.new(0, 300, 0, 100)
-            confirmFrame.Position = UDim2.new(0.5, -150, 0.5, -50)
-            confirmFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-            confirmFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
-            confirmFrame.BackgroundTransparency = 0.1
-            confirmFrame.BorderSizePixel = 0
-            confirmFrame.Parent = confirmGui
-            
-            local gradient = Instance.new("UIGradient")
-            gradient.Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 100, 150)),
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 50, 100))
-            })
-            gradient.Rotation = 90
-            gradient.Parent = confirmFrame
-            
-            local confirmText = Instance.new("TextLabel")
-            confirmText.Size = UDim2.new(1, 0, 1, 0)
-            confirmText.BackgroundTransparency = 1
-            confirmText.Text = "✓ FROZE " .. targetPlayer.Name .. "!\nThey can't move for 10 seconds!"
-            confirmText.TextColor3 = Color3.fromRGB(255, 255, 255)
-            confirmText.Font = Enum.Font.GothamBold
-            confirmText.TextSize = 18
-            confirmText.TextYAlignment = Enum.TextYAlignment.Center
-            confirmText.Parent = confirmFrame
-            
-            delay(3, function() confirmGui:Destroy() end)
-            delay(10, function()
-                if freezeBox then freezeBox:Destroy() end
-                if humanoid then
-                    humanoid.WalkSpeed = 16
-                    humanoid.JumpPower = 50
+        local targetPart = humanoid.Parent:FindFirstChild("Head") or humanoid.Parent:FindFirstChild("HumanoidRootPart")
+        if targetPart then
+            boostEffect.Parent = targetPart
+            delay(2, function() 
+                if boostEffect then 
+                    boostEffect:Destroy() 
                 end
             end)
         end
@@ -136,8 +88,8 @@ ScreenGui.Parent = Player.PlayerGui
 ScreenGui.ResetOnSpawn = false
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 350, 0, 450)
-MainFrame.Position = UDim2.new(0.5, -175, 0.5, -225)
+MainFrame.Size = UDim2.new(0, 300, 0, 200) -- Smaller height since freeze is removed
+MainFrame.Position = UDim2.new(0.5, -150, 0.5, -100)
 MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 MainFrame.BackgroundTransparency = 0.1
@@ -153,14 +105,14 @@ mainGradient.Rotation = 90
 mainGradient.Parent = MainFrame
 
 local TitleLabel = Instance.new("TextLabel")
-TitleLabel.Size = UDim2.new(1, 0, 0, 60)
+TitleLabel.Size = UDim2.new(1, 0, 0, 50)
 TitleLabel.Position = UDim2.new(0, 0, 0, 0)
 TitleLabel.BackgroundColor3 = Color3.fromRGB(0, 100, 150)
 TitleLabel.BackgroundTransparency = 0.2
 TitleLabel.Text = "STEVEN'S HACKS"
 TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 TitleLabel.Font = Enum.Font.GothamBold
-TitleLabel.TextSize = 24
+TitleLabel.TextSize = 20
 TitleLabel.TextYAlignment = Enum.TextYAlignment.Center
 TitleLabel.Parent = MainFrame
 
@@ -173,145 +125,48 @@ titleGradient.Rotation = 90
 titleGradient.Parent = TitleLabel
 
 local ScrollingFrame = Instance.new("ScrollingFrame")
-ScrollingFrame.Size = UDim2.new(1, -20, 1, -80)
-ScrollingFrame.Position = UDim2.new(0, 10, 0, 70)
+ScrollingFrame.Size = UDim2.new(1, -20, 1, -60)
+ScrollingFrame.Position = UDim2.new(0, 10, 0, 60)
 ScrollingFrame.BackgroundTransparency = 1
 ScrollingFrame.BorderSizePixel = 0
 ScrollingFrame.ScrollBarThickness = 6
 ScrollingFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 120)
-ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 200)
+ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 120)
 ScrollingFrame.Parent = MainFrame
 
 local UIListLayout = Instance.new("UIListLayout")
-UIListLayout.Padding = UDim.new(0, 15)
+UIListLayout.Padding = UDim.new(0, 10)
 UIListLayout.Parent = ScrollingFrame
 
+-- FLOAT MODE BUTTON
 local NoclipFloorButton = Instance.new("TextButton")
-NoclipFloorButton.Size = UDim2.new(1, 0, 0, 50)
+NoclipFloorButton.Size = UDim2.new(1, 0, 0, 40)
 NoclipFloorButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
 NoclipFloorButton.BackgroundTransparency = 0.5
 NoclipFloorButton.Text = "Float Mode: OFF"
 NoclipFloorButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 NoclipFloorButton.Font = Enum.Font.GothamBold
-NoclipFloorButton.TextSize = 16
+NoclipFloorButton.TextSize = 14
 NoclipFloorButton.Parent = ScrollingFrame
 
-local FreezeButton = Instance.new("TextButton")
-FreezeButton.Size = UDim2.new(1, 0, 0, 50)
-FreezeButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-FreezeButton.BackgroundTransparency = 0.5
-FreezeButton.Text = "Freeze Player"
-FreezeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-FreezeButton.Font = Enum.Font.GothamBold
-FreezeButton.TextSize = 16
-FreezeButton.Parent = ScrollingFrame
-
-local PlayerFrame = Instance.new("Frame")
-PlayerFrame.Size = UDim2.new(0, 280, 0, 350)
-PlayerFrame.Position = UDim2.new(0, 370, 0.5, -175)
-PlayerFrame.AnchorPoint = Vector2.new(0, 0.5)
-PlayerFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-PlayerFrame.BackgroundTransparency = 0.1
-PlayerFrame.BorderSizePixel = 0
-PlayerFrame.Visible = false
-PlayerFrame.Parent = MainFrame
-
-local playerGradient = Instance.new("UIGradient")
-playerGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(60, 60, 80)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(40, 40, 60))
-})
-playerGradient.Rotation = 90
-playerGradient.Parent = PlayerFrame
-
-local PlayerTitle = Instance.new("TextLabel")
-PlayerTitle.Size = UDim2.new(1, 0, 0, 50)
-PlayerTitle.Position = UDim2.new(0, 0, 0, 0)
-PlayerTitle.BackgroundColor3 = Color3.fromRGB(0, 100, 150)
-PlayerTitle.BackgroundTransparency = 0.2
-PlayerTitle.Text = "SELECT PLAYER"
-PlayerTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-PlayerTitle.Font = Enum.Font.GothamBold
-PlayerTitle.TextSize = 18
-PlayerTitle.TextYAlignment = Enum.TextYAlignment.Center
-PlayerTitle.Parent = PlayerFrame
-
-local PlayerScrolling = Instance.new("ScrollingFrame")
-PlayerScrolling.Size = UDim2.new(1, -20, 1, -120)
-PlayerScrolling.Position = UDim2.new(0, 10, 0, 60)
-PlayerScrolling.BackgroundTransparency = 1
-PlayerScrolling.BorderSizePixel = 0
-PlayerScrolling.ScrollBarThickness = 5
-PlayerScrolling.CanvasSize = UDim2.new(0, 0, 0, 0)
-PlayerScrolling.Parent = PlayerFrame
-
-local PlayerListLayout = Instance.new("UIListLayout")
-PlayerListLayout.Padding = UDim.new(0, 8)
-PlayerListLayout.Parent = PlayerScrolling
-
-local SubmitButton = Instance.new("TextButton")
-SubmitButton.Size = UDim2.new(1, -20, 0, 40)
-SubmitButton.Position = UDim2.new(0, 10, 1, -50)
-SubmitButton.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
-SubmitButton.BackgroundTransparency = 0.3
-SubmitButton.Text = "FREEZE PLAYER"
-SubmitButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-SubmitButton.Font = Enum.Font.GothamBold
-SubmitButton.TextSize = 16
-SubmitButton.Parent = PlayerFrame
+-- SPEED BOOST BUTTON (NEW)
+local SpeedBoostButton = Instance.new("TextButton")
+SpeedBoostButton.Size = UDim2.new(1, 0, 0, 40)
+SpeedBoostButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+SpeedBoostButton.BackgroundTransparency = 0.5
+SpeedBoostButton.Text = "Speed Boost: OFF"
+SpeedBoostButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpeedBoostButton.Font = Enum.Font.GothamBold
+SpeedBoostButton.TextSize = 14
+SpeedBoostButton.Parent = ScrollingFrame
 
 UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y)
 end)
 
-PlayerListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    PlayerScrolling.CanvasSize = UDim2.new(0, 0, 0, PlayerListLayout.AbsoluteContentSize.Y)
-end)
-
+-- CONNECT BUTTONS
 NoclipFloorButton.MouseButton1Click:Connect(ToggleStealthNoclip)
-
-FreezeButton.MouseButton1Click:Connect(function()
-    PlayerFrame.Visible = not PlayerFrame.Visible
-    
-    if PlayerFrame.Visible then
-        for _, child in pairs(PlayerScrolling:GetChildren()) do
-            if child:IsA("TextButton") then child:Destroy() end
-        end
-        
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= Player then
-                local playerButton = Instance.new("TextButton")
-                playerButton.Size = UDim2.new(1, 0, 0, 35)
-                playerButton.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
-                playerButton.BackgroundTransparency = 0.5
-                playerButton.Text = player.Name
-                playerButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-                playerButton.Font = Enum.Font.Gotham
-                playerButton.TextSize = 14
-                playerButton.Parent = PlayerScrolling
-                
-                playerButton.MouseButton1Click:Connect(function()
-                    if selectedPlayer then
-                        for _, btn in pairs(PlayerScrolling:GetChildren()) do
-                            if btn:IsA("TextButton") and btn.Text == selectedPlayer.Name then
-                                btn.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
-                            end
-                        end
-                    end
-                    selectedPlayer = player
-                    playerButton.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
-                end)
-            end
-        end
-    end
-end)
-
-SubmitButton.MouseButton1Click:Connect(function()
-    if selectedPlayer then
-        FreezeTargetPlayer(selectedPlayer)
-        PlayerFrame.Visible = false
-    end
-end)
+SpeedBoostButton.MouseButton1Click:Connect(ToggleSpeedBoost)
 
 -- UPDATED HEARTBEAT WITH AUTO SPEED BOOST
 RunService.Heartbeat:Connect(function()
@@ -319,10 +174,13 @@ RunService.Heartbeat:Connect(function()
         StealthNoclip()
     end
     
-    -- AUTO SPEED BOOST (ALWAYS ACTIVE)
-    AutoSpeedBoost()
+    -- AUTO SPEED BOOST (ONLY IF ENABLED)
+    if isSpeedBoostEnabled then
+        AutoSpeedBoost()
+    end
 end)
 
+-- GUI DRAGGING
 local dragging = false
 local dragInput, dragStart, startPos
 
@@ -353,4 +211,4 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 print("STEVEN'S HACKS LOADED!")
-print("Fancy UI + Float Mode + Freeze Player + Auto Speed Boost!")
+print("Float Mode + Speed Boost (Toggleable)!")
